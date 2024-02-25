@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 )
 
 func convertMarkdownToHTML(markdown string) string {
@@ -13,6 +14,13 @@ func convertMarkdownToHTML(markdown string) string {
 	html = regexp.MustCompile(`\*\*(.*?)\*\*`).ReplaceAllString(html, "<b>$1</b>")
 
 	html = regexp.MustCompile(`_(.*?)_`).ReplaceAllString(html, "<i>$1</i>")
+
+	preformattedBlocks := regexp.MustCompile("```([^`]+)```").FindAllStringSubmatch(html, -1)
+	for _, match := range preformattedBlocks {
+		preformattedText := match[1]
+		preformattedHTML := "<pre>" + preformattedText + "</pre>"
+		html = strings.Replace(html, match[0], preformattedHTML, 1)
+	}
 
 	html = regexp.MustCompile("`([^`]+)`").ReplaceAllString(html, "<tt>$1</tt>")
 
