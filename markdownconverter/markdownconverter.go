@@ -5,16 +5,18 @@ import (
 	"strings"
 )
 
-var TagMap = map[*regexp.Regexp]string{
-	regexp.MustCompile(`\*\*(.*?)\*\*`): "<b>$1</b>",
-	regexp.MustCompile(`_(.*?)_`):       "<i>$1</i>",
-	regexp.MustCompile("`([^`]+)`"):     "<tt>$1</tt>",
-}
-
 var (
+	TagMap = map[*regexp.Regexp]string{
+		regexp.MustCompile(`\*\*(.*?)\*\*`): "<b>$1</b>",
+		regexp.MustCompile(`_(.*?)_`):       "<i>$1</i>",
+		regexp.MustCompile("`([^`]+)`"):     "<tt>$1</tt>",
+	}
+
 	preformattedBlockOpeningTag = "<pre>\n"
 	preformattedBlockClosingTag = "</pre>\n"
 	backtick                    = "```"
+	paragraphOpeningTag         = "<p>"
+	paragraphClosingTag         = "</p>"
 )
 
 func processPreformattedBlock(result *strings.Builder, isPreformattedBlock *bool) {
@@ -26,10 +28,18 @@ func processPreformattedBlock(result *strings.Builder, isPreformattedBlock *bool
 	}
 }
 
-func processRegularLine(result *strings.Builder, isPreformattedBlock bool, line string) {
-	if isPreformattedBlock {
-		result.WriteString(line + "\n")
+func processParagraph(result *strings.Builder, isParagraphOpen *bool, line string) {
+	trimmedLine := strings.TrimSpace(line)
+	if trimmedLine == "" {
+		if *isParagraphOpen {
+			result.WriteString(paragraphClosingTag + "\n")
+			*isParagraphOpen = false
+		}
 	} else {
+		if !*isParagraphOpen {
+			result.WriteString(paragraphOpeningTag)
+			*isParagraphOpen = true
+		}
 		for regex, replacement := range TagMap {
 			line = regex.ReplaceAllString(line, replacement)
 		}
@@ -41,13 +51,23 @@ func ConvertMarkdownToHTML(markdown string) string {
 	lines := strings.Split(markdown, "\n")
 	var result strings.Builder
 	isPreformattedBlock := false
+	isParagraphOpen := false
 
 	for _, line := range lines {
 		if strings.HasPrefix(line, backtick) {
 			processPreformattedBlock(&result, &isPreformattedBlock)
 			continue
 		}
-		processRegularLine(&result, isPreformattedBlock, line)
+
+		if isPreformattedBlock {
+			result.WriteString(line + "\n")
+		} else {
+			processParagraph(&result, &isParagraphOpen, line)
+		}
+	}
+
+	if isParagraphOpen {
+		result.WriteString(paragraphClosingTag + "\n")
 	}
 
 	if isPreformattedBlock {
