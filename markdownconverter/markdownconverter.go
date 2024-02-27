@@ -8,7 +8,7 @@ import (
 var (
 	TagMap = map[*regexp.Regexp]string{
 		regexp.MustCompile(`\*\*(.*?)\*\*`): "<b>$1</b>",
-		regexp.MustCompile(`_(.*?)_`):       "<i>$1</i>",
+		regexp.MustCompile(`\b_(.*?)_\b`):   "<i>$1</i>",
 		regexp.MustCompile("`([^`]+)`"):     "<tt>$1</tt>",
 	}
 
