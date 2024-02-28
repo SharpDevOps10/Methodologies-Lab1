@@ -1,6 +1,7 @@
 package markdownconverter
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 )
@@ -47,7 +48,26 @@ func processParagraph(result *strings.Builder, isParagraphOpen *bool, line strin
 	}
 }
 
-func ConvertMarkdownToHTML(markdown string) string {
+func hasUnclosedTags(data string) bool {
+	regexList := []*regexp.Regexp{
+		regexp.MustCompile(`(\*\*[^*]+)`),
+		regexp.MustCompile(`(_[^_]+)`),
+		regexp.MustCompile(`(^|\s)` + "`\\w+`"),
+	}
+
+	for _, regex := range regexList {
+		matches := regex.FindAllString(data, -1)
+		for _, match := range matches {
+			if match[len(match)-1:] != "`" {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func ConvertMarkdownToHTML(markdown string) (string, error) {
 	lines := strings.Split(markdown, "\n")
 	var result strings.Builder
 	isPreformattedBlock := false
@@ -74,5 +94,11 @@ func ConvertMarkdownToHTML(markdown string) string {
 		result.WriteString(preformattedBlockClosingTag)
 	}
 
-	return result.String()
+	htmlContent := result.String()
+
+	if hasUnclosedTags(htmlContent) {
+		return "", errors.New("error: invalid markdown tags are not closed")
+	}
+
+	return htmlContent, nil
 }

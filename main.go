@@ -23,7 +23,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	htmlContent := markdownconverter.ConvertMarkdownToHTML(string(markdownContent))
+	htmlContent, err := markdownconverter.ConvertMarkdownToHTML(string(markdownContent))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error converting Markdown to HTML: %v\n", err)
+		os.Exit(1)
+	}
 	if *outputPath != "" {
 		err := os.WriteFile(*outputPath, []byte(htmlContent), 0644)
 		if err != nil {
